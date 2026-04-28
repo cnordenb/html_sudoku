@@ -19,4 +19,4 @@
 - The maximum amount of clues in this implementation is arbitrary.
 
 ## Warning
-- These sudokus are computer-generated and are not handcrafted. Read Nobuhiko Kanamoto's [plea](https://www.nikoli.co.jp/en/puzzles/sudoku/why_hand_made/) as to why you should only play handmade sudokus.
+- These sudokus are computer-generated and are not handcrafted. Read Nobuhiko Kanamoto's [plea](https://www.nikoli.co.jp/en/puzzles/sudoku/why_hand_made/) as to why you should only play sudokus hand made by humans.
