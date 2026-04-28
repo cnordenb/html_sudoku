@@ -16,7 +16,7 @@
 ## Constraints
 - The Sudoku only has one possible solution.
 - The minimum amount of clues provided the constraint above is 17, as mathematically proven by [McGuire et al](https://arxiv.org/abs/1201.0749).
-- The maximum amount of clues in this implementation is arbitrary.
+- The maximum amount of clues in this implementation is arbitrarily limited to 80.
 
 ## Warning
 - These sudokus are computer-generated and are not handcrafted. Read Nobuhiko Kanamoto's [plea](https://www.nikoli.co.jp/en/puzzles/sudoku/why_hand_made/) as to why you should only play sudokus hand made by humans.
