@@ -102,6 +102,35 @@
 <script>
 let solution = [];
 let puzzle = [];
+let sudokuCache = [];
+
+// Inline sample of sudoku17.txt for local file:// testing
+const SUDOKU_SAMPLE = [
+  "000000010400000000020000000000050407008000300001090000300400200050100000000806000",
+  "000000010400000000020000000000050604008000300001090000300400200050100000000807000",
+  "000000012000035000000600070700000300000400800100000000000120000080000040050000600",
+  "000000012003600000000007000410020000000500300700000600280000040000300500000000000",
+  "000000012008030000000000040120500000000004700060000000507000300000620000000100000"
+];
+
+// Load 17-clue sudokus from file or use fallback
+async function loadSudokuCache() {
+  try {
+    const response = await fetch("sudoku17.txt");
+    const text = await response.text();
+    sudokuCache = text.trim().split("\n").map(line => 
+      line.split("").map(c => parseInt(c))
+    );
+    console.log(`Loaded ${sudokuCache.length} sudokus from sudoku17.txt`);
+  } catch (e) {
+    // Fallback to inline sample for local file:// URLs
+    console.warn("Could not load sudoku17.txt via fetch, using inline sample", e);
+    sudokuCache = SUDOKU_SAMPLE.map(line =>
+      line.split("").map(c => parseInt(c))
+    );
+    console.log(`Using ${sudokuCache.length} inline sudokus as fallback`);
+  }
+}
 
 function updateDifficultyLabel(value) {
   const emptyCells = Number(value);
@@ -115,6 +144,9 @@ difficultySlider.addEventListener("input", function() {
 });
 
 updateDifficultyLabel(difficultySlider.value);
+
+// Load cache on startup
+loadSudokuCache();
 
 // Create empty board UI
 function createBoard() {
@@ -237,34 +269,88 @@ function shuffle(arr) {
   return arr.sort(() => Math.random() - 0.5);
 }
 
+// Convert flat array to 2D board
+function flatToBoard(flat) {
+  const board = [];
+  for (let i = 0; i < 9; i++) {
+    board.push(flat.slice(i * 9, (i + 1) * 9).slice());
+  }
+  return board;
+}
+
+// Augment a 17-clue puzzle to have fewer empty cells by randomly adding clues
+function augmentPuzzle(puzzleBoard, solutionBoard, targetEmptyCells) {
+  const augmented = puzzleBoard.map(row => row.slice());
+  
+  // Find all empty cells
+  const emptyCells = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (augmented[r][c] === 0) {
+        emptyCells.push([r, c]);
+      }
+    }
+  }
+  
+  const shuffled = shuffle(emptyCells);
+  let currentEmpty = emptyCells.length;
+  
+  // Fill cells until we reach target
+  for (let i = 0; i < shuffled.length && currentEmpty > targetEmptyCells; i++) {
+    const [r, c] = shuffled[i];
+    augmented[r][c] = solutionBoard[r][c];
+    currentEmpty--;
+  }
+  
+  return augmented;
+}
+
 // Generate puzzle
 function generatePuzzle() {
   createBoard();
   createRevealBoard();
 
-  let board = Array.from({length: 9}, () => Array(9).fill(0));
-  solve(board);
-
-  solution = board.map(row => row.slice());
-  puzzle = board.map(row => row.slice());
-
   const targetEmptyCells = Number(document.getElementById("difficulty").value);
-  const positions = shuffle(Array.from({length: 81}, (_, i) => i));
-  let removed = 0;
+  const targetClues = 81 - targetEmptyCells;
+  
+  // Use cached 17-clue sudokus for difficulties with 24 clues or fewer
+  if (sudokuCache.length > 0 && targetClues <= 24) {
+    const randomIdx = Math.floor(Math.random() * sudokuCache.length);
+    const cachedFlat = sudokuCache[randomIdx];
+    const cachedBoard = flatToBoard(cachedFlat);
+    
+    // Solve the cached puzzle to get the full solution
+    const solveBoard = cachedBoard.map(row => row.slice());
+    solve(solveBoard);
+    solution = solveBoard;
+    
+    // Augment the cached puzzle to match target difficulty
+    puzzle = augmentPuzzle(cachedBoard, solution, targetEmptyCells);
+  } else {
+    // Generate from scratch for 25 clues or more
+    let board = Array.from({length: 9}, () => Array(9).fill(0));
+    solve(board);
 
-  for (let i = 0; i < positions.length && removed < targetEmptyCells; i++) {
-    const pos = positions[i];
-    const r = Math.floor(pos / 9);
-    const c = pos % 9;
-    const backup = puzzle[r][c];
+    solution = board.map(row => row.slice());
+    puzzle = board.map(row => row.slice());
 
-    puzzle[r][c] = 0;
+    const positions = shuffle(Array.from({length: 81}, (_, i) => i));
+    let removed = 0;
 
-    const candidate = puzzle.map(row => row.slice());
-    if (hasUniqueSolution(candidate)) {
-      removed++;
-    } else {
-      puzzle[r][c] = backup;
+    for (let i = 0; i < positions.length && removed < targetEmptyCells; i++) {
+      const pos = positions[i];
+      const r = Math.floor(pos / 9);
+      const c = pos % 9;
+      const backup = puzzle[r][c];
+
+      puzzle[r][c] = 0;
+
+      const candidate = puzzle.map(row => row.slice());
+      if (hasUniqueSolution(candidate)) {
+        removed++;
+      } else {
+        puzzle[r][c] = backup;
+      }
     }
   }
 
