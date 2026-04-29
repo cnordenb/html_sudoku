@@ -81,7 +81,7 @@
 <div class="controls">
   <label>Difficulty: </label>
   <input type="range" id="difficulty" min="1" max="64" value="40">
-  <span id="diffValue">40</span> empty cells
+  <span id="diffValue"></span>
   <br><br>
   <button onclick="generatePuzzle()">Reset</button>
   <button onclick="validateSolution()">Validate</button>
@@ -103,9 +103,18 @@
 let solution = [];
 let puzzle = [];
 
-document.getElementById("difficulty").addEventListener("input", function() {
-  document.getElementById("diffValue").innerText = this.value;
+function updateDifficultyLabel(value) {
+  const emptyCells = Number(value);
+  const clues = 81 - emptyCells;
+  document.getElementById("diffValue").innerText = `${emptyCells} empty cells, ${clues} clues`;
+}
+
+const difficultySlider = document.getElementById("difficulty");
+difficultySlider.addEventListener("input", function() {
+  updateDifficultyLabel(this.value);
 });
+
+updateDifficultyLabel(difficultySlider.value);
 
 // Create empty board UI
 function createBoard() {
@@ -186,7 +195,7 @@ function solve(board) {
   }
   return true;
 }
-<!-- TODO: add uniquness checkbox, add every block needs a clue checkbox -->
+<!-- TODO: add every block needs a clue checkbox -->
 
 
 function findEmptyCell(board) {
@@ -290,7 +299,9 @@ function validateSolution() {
   for (let i = 0; i < 81; i++) {
     let r = Math.floor(i / 9);
     let c = i % 9;
-    if (String(cells[i].value) === String(solution[r][c])) {
+    if (cells[i].value === "") {
+      cells[i].style.background = "#f7f1c5";
+    } else if (String(cells[i].value) === String(solution[r][c])) {
       cells[i].style.background = "#c8f7c5";
     } else {
       cells[i].style.background = "#f7c5c5";
