@@ -555,7 +555,7 @@ async function generatePuzzle() {
 
   const targetEmptyCells = Number(document.getElementById("difficulty").value);
   const targetClues = 81 - targetEmptyCells;
-  const shouldUseLoadingOverlay =  targetClues <= 30;
+  const shouldUseLoadingOverlay =  targetClues <= 35;
   let loadingTimer = null;
 
   if (shouldUseLoadingOverlay) {
