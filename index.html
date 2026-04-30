@@ -25,6 +25,23 @@
   .board-panel {
     text-align: center;
   }
+  .timer {
+    margin: 10px auto 10px;
+    text-align: center;
+    font-weight: bold;
+  }
+  .timer-display {
+    margin-top: 8px;
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .timer-label {
+    position: relative;
+    margin-bottom: 20px;
+  }
+
+
   .board-title {
     margin-bottom: 10px;
     font-weight: bold;
@@ -59,6 +76,13 @@
   input[type="range"] {
     width: 260px;
     height: auto;
+  }
+  input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+    margin-right: 4px;
+    vertical-align: middle;
   }
   .bold-border {
     border: 0px solid black;
@@ -113,6 +137,13 @@
     <button id="revealButton" onclick="revealSolution()">Reveal</button>
   </div>
 </div>
+<div class="timer-label">
+    <label><input type="checkbox" id="showTimer" checked> Show Timer</label>
+</div>
+<div class="timer">
+  <div id="timerDisplay" class="timer-display">00:00:00</div>
+</div>
+
 
 <div id="loadingOverlay">Loading Sudoku... Please wait.</div>
 
@@ -123,6 +154,8 @@ let sudokuCache = [];
 let loadingOverlayShownAt = 0;
 let generationWorker = null;
 let solutionRevealed = false;
+let timerStartAt = 0;
+let timerInterval = null;
 
 // Inline sample of sudoku17.txt for local file:// testing
 const SUDOKU_SAMPLE = [
@@ -167,6 +200,45 @@ updateDifficultyLabel(difficultySlider.value);
 
 // Load cache on startup
 const sudokuCacheReady = loadSudokuCache();
+
+function formatElapsedTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const hours = Math.floor(minutes / 60);
+  return `${String(hours).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function updateTimerDisplay() {
+  const timerDisplay = document.getElementById("timerDisplay");
+  const showTimer = document.getElementById("showTimer").checked;
+
+  timerDisplay.style.display = showTimer ? "block" : "none";
+
+  if (!showTimer || timerStartAt === 0) {
+    timerDisplay.innerText = "Time: 00:00";
+    return;
+  }
+
+  const elapsedSeconds = Math.floor((Date.now() - timerStartAt) / 1000);
+  timerDisplay.innerText = `${formatElapsedTime(elapsedSeconds)}`;
+}
+
+function startTimer() {
+  timerStartAt = Date.now();
+  updateTimerDisplay();
+
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+  }
+
+  timerInterval = setInterval(updateTimerDisplay, 1000);
+}
+
+function syncTimerVisibility() {
+  updateTimerDisplay();
+}
+
+document.getElementById("showTimer").addEventListener("change", syncTimerVisibility);
 
 // Create empty board UI
 function createBoard() {
@@ -552,6 +624,7 @@ async function generatePuzzle() {
   createRevealBoard();
   solutionRevealed = false;
   document.getElementById("revealButton").innerText = "Reveal";
+  startTimer();
 
   await sudokuCacheReady;
 
@@ -598,6 +671,7 @@ async function generatePuzzle() {
   solution = generationResult.solution;
   puzzle = generationResult.puzzle;
   renderBoard();
+  updateTimerDisplay();
 }
 
 // Render puzzle
